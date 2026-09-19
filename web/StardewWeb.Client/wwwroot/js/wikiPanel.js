@@ -13,7 +13,7 @@ const STORAGE_TAB = 'stardew-web.panelTab';
 let panel, wikiBody, chatRoot, toggle, tabButtons = {};
 let open = false;
 let tab = 'wiki';
-let chat = null;                  // chatPanel.js, loaded on first use of the Ask tab
+let chat = null;                  // Promise for chatPanel.js, started on first use of the Ask tab
 const summaryCache = new Map();   // page title -> Promise<{paragraphs, url} | null>
 let summaryTimer = null;
 
@@ -120,11 +120,13 @@ function setTab(id, initial = false) {
     if (id === 'chat' && (open || !initial)) ensureChat().then(c => { if (!initial) c.focusInput(); });
 }
 
-async function ensureChat() {
-    if (!chat) {
-        chat = await import('./chatPanel.js');
-        chat.mountChat(chatRoot);
-    }
+function ensureChat() {
+    // Remember the in-flight import, not just the finished module: setOpen and setTab can both ask
+    // for it before the first load resolves, which would mount the chat UI twice.
+    chat ??= import('./chatPanel.js').then(module => {
+        module.mountChat(chatRoot);
+        return module;
+    });
     return chat;
 }
 
