@@ -1,0 +1,12 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <!-- StardewValley.GameData from your Stardew Valley install, decompiled by setup.ps1 into local/libs/StardewValley.GameData and compiled against KNI. -->
+  <Import Project="..\..\build\Kni.props" />
+  <PropertyGroup>
+    <AssemblyName>StardewValley.GameData</AssemblyName>
+    <RootNamespace />
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(GameLibsDir)StardewValley.GameData\**\*.cs" Exclude="$(GameLibsDir)StardewValley.GameData\bin\**;$(GameLibsDir)StardewValley.GameData\obj\**" />
+  </ItemGroup>
+</Project>

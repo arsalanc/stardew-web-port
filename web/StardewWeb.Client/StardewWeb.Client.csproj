@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+  <!-- Browser host: page, canvas and per-frame tick. The game itself lives in StardewValley.Web. -->
+  <Import Project="..\..\build\Kni.props" />
+  <!-- Referenced directly (not just via the game library) so Blazor publish ships them. -->
+  <Import Project="..\..\build\GameRefs.props" />
+
+  <PropertyGroup>
+    <RootNamespace>StardewWeb.Client</RootNamespace>
+    <AssemblyName>StardewWeb.Client</AssemblyName>
+    <KniPlatform>BlazorGL</KniPlatform>
+    <BlazorEnableTimeZoneSupport>false</BlazorEnableTimeZoneSupport>
+  </PropertyGroup>
+
+  <!--
+    Play builds (dotnet publish -c Release, see tools/publish-play.ps1): compile the game to native
+    WebAssembly ahead of time instead of interpreting it. Needs the wasm-tools-net8 workload.
+    Trimming stays off: the game relies on reflection (XmlSerializer saves, content readers).
+  -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <RunAOTCompilation>true</RunAOTCompilation>
+    <PublishTrimmed>false</PublishTrimmed>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="nkast.Kni.Platform.Blazor.GL" Version="$(KniVersion)" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="8.0.29" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="8.0.29" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\StardewValley.Web\StardewValley.Web.csproj" />
+  </ItemGroup>
+</Project>

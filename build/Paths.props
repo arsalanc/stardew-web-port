@@ -1,0 +1,22 @@
+<Project>
+  <!--
+    Where things live. Everything derived from your copy of the game goes under local/ (git-ignored):
+      local/local.props  written by setup.ps1: GameDir = your Stardew Valley install
+      local/src/         the game, decompiled from your install and patched for the browser
+      local/libs/        xTile, StardewValley.GameData and BmFont, decompiled from your install
+      local/audio/       the game's audio, exported for Web Audio
+  -->
+  <PropertyGroup>
+    <RepoRoot>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', '..'))</RepoRoot>
+    <LocalDir>$(RepoRoot)local\</LocalDir>
+    <GameSrcDir>$(LocalDir)src\</GameSrcDir>
+    <GameLibsDir>$(LocalDir)libs\</GameLibsDir>
+    <GameAudioDir>$(LocalDir)audio\</GameAudioDir>
+  </PropertyGroup>
+
+  <Import Project="$(LocalDir)local.props" Condition="Exists('$(LocalDir)local.props')" />
+
+  <Target Name="RequireSetup" BeforeTargets="ResolveAssemblyReferences;CoreCompile" Condition="'$(GameDir)' == '' Or !Exists('$(GameSrcDir)')">
+    <Error Text="Run setup.ps1 first: it points the build at your Stardew Valley install and prepares local/ (see README.md)." />
+  </Target>
+</Project>

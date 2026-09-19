@@ -1,0 +1,12 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <!-- BmFont from your Stardew Valley install, decompiled by setup.ps1 into local/libs/BmFont and compiled against KNI. -->
+  <Import Project="..\..\build\Kni.props" />
+  <PropertyGroup>
+    <AssemblyName>BmFont</AssemblyName>
+    <RootNamespace />
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(GameLibsDir)BmFont\**\*.cs" Exclude="$(GameLibsDir)BmFont\bin\**;$(GameLibsDir)BmFont\obj\**" />
+  </ItemGroup>
+</Project>

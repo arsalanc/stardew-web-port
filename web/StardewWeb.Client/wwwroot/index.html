@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Stardew Valley (web port)</title>
+    <base href="/" />
+    <link href="css/app.css" rel="stylesheet" />
+    <link href="StardewWeb.Client.styles.css" rel="stylesheet" />
+    <style>
+        html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+        #loading { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+                   color: #eee; font: 16px 'Segoe UI', sans-serif; background: #000; }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <div id="loading">Loading…</div>
+    </div>
+
+    <div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="" class="reload">Reload</a>
+        <a class="dismiss">x</a>
+    </div>
+
+    <script src="_framework/blazor.webassembly.js" autostart="false"></script>
+    <script>Blazor.start();</script>
+
+    <!-- KNI browser platform bindings -->
+    <script src="_content/nkast.Wasm.JSInterop/js/JSObject.10.0.3.js"></script>
+    <script src="_content/nkast.Wasm.Dom/js/Window.10.0.3.js"></script>
+    <script src="_content/nkast.Wasm.Dom/js/Document.10.0.3.js"></script>
+    <script src="_content/nkast.Wasm.Dom/js/Navigator.10.0.3.js"></script>
+    <script src="_content/nkast.Wasm.Dom/js/Gamepad.10.0.3.js"></script>
+    <script src="_content/nkast.Wasm.Dom/js/Media.10.0.3.js"></script>
+    <script src="_content/nkast.Wasm.XHR/js/XHR.10.0.3.js"></script>
+    <script src="_content/nkast.Wasm.Canvas/js/Canvas.10.0.3.js"></script>
+    <script src="_content/nkast.Wasm.Canvas/js/CanvasGLContext.10.0.3.js"></script>
+    <script src="_content/nkast.Wasm.Audio/js/Audio.10.0.3.js"></script>
+    <script src="_content/nkast.Wasm.XR/js/XR.10.0.3.js"></script>
+
+    <script>
+        // ?bgtick keeps the game ticking while the tab is hidden (requestAnimationFrame pauses
+        // in hidden tabs). Debug/testing only; normal play uses requestAnimationFrame.
+        const scheduleFrame = new URLSearchParams(location.search).has('bgtick')
+            ? cb => setTimeout(cb, 16)
+            : cb => window.requestAnimationFrame(cb);
+
+        let cursorVisible = null;
+
+        function tickJS()
+        {
+            // The game draws its own cursor; hide the OS one unless the game asks for it.
+            const visible = window.theInstance.invokeMethod('TickDotNet');
+            if (visible !== cursorVisible)
+            {
+                cursorVisible = visible;
+                document.getElementById('theCanvas').style.cursor = visible ? 'default' : 'none';
+            }
+            scheduleFrame(tickJS);
+        }
+
+        window.initRenderJS = (instance) =>
+        {
+            window.theInstance = instance;
+
+            var canvas = document.getElementById('theCanvas');
+            var holder = document.getElementById('canvasHolder');
+            // A hidden or not-yet-laid-out page reports 0x0; the game can't create
+            // zero-sized render targets, so fall back to the desktop default.
+            canvas.width = holder.clientWidth || 1280;
+            canvas.height = holder.clientHeight || 720;
+            canvas.addEventListener("contextmenu", e => e.preventDefault());
+
+            scheduleFrame(tickJS);
+
+            // ?perf shows a frame-timing overlay (top-left), refreshed twice a second.
+            if (new URLSearchParams(location.search).has('perf'))
+            {
+                const overlay = document.createElement('div');
+                overlay.id = 'perf';
+                overlay.style.cssText = 'position:fixed;left:8px;top:8px;z-index:10;padding:4px 8px;border-radius:4px;'
+                    + 'background:rgba(0,0,0,.65);color:#9f9;font:12px/1.4 Consolas,monospace;pointer-events:none';
+                document.body.appendChild(overlay);
+                setInterval(() => { overlay.textContent = instance.invokeMethod('PerfSummary'); }, 500);
+            }
+        };
+
+        // Keep arrow keys, space and the wheel from scrolling the page.
+        window.addEventListener("keydown", function (event)
+        {
+            if ([32, 37, 38, 39, 40].indexOf(event.keyCode) > -1)
+                event.preventDefault();
+        });
+        window.addEventListener("wheel", e => e.preventDefault(), { passive: false });
+    </script>
+</body>
+
+</html>

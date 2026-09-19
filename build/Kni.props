@@ -1,0 +1,28 @@
+<Project>
+  <!-- Shared settings for everything compiled against KNI (the web build). -->
+  <Import Project="Paths.props" />
+  <PropertyGroup>
+    <KniVersion>4.3.9001</KniVersion>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <CheckForOverflowUnderflow>False</CheckForOverflowUnderflow>
+    <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
+    <DefineConstants>$(DefineConstants);BLAZORGL;WEB</DefineConstants>
+    <!-- Decompiled code is noisy; keep real errors visible. -->
+    <NoWarn>$(NoWarn);CS0108;CS0114;CS0162;CS0168;CS0169;CS0219;CS0414;CS0618;CS0649;CS0659;CS0661;CS8632;SYSLIB0011;SYSLIB0014</NoWarn>
+    <!-- Everything built with these props runs in the browser; "browser-only API" warnings are noise. -->
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="nkast.Xna.Framework" Version="$(KniVersion)" />
+    <PackageReference Include="nkast.Xna.Framework.Content" Version="$(KniVersion)" />
+    <PackageReference Include="nkast.Xna.Framework.Graphics" Version="$(KniVersion)" />
+    <PackageReference Include="nkast.Xna.Framework.Audio" Version="$(KniVersion)" />
+    <PackageReference Include="nkast.Xna.Framework.Media" Version="$(KniVersion)" />
+    <PackageReference Include="nkast.Xna.Framework.Input" Version="$(KniVersion)" />
+    <PackageReference Include="nkast.Xna.Framework.Game" Version="$(KniVersion)" />
+  </ItemGroup>
+</Project>

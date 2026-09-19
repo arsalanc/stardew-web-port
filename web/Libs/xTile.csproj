@@ -1,0 +1,12 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <!-- xTile from your Stardew Valley install, decompiled by setup.ps1 into local/libs/xTile and compiled against KNI. -->
+  <Import Project="..\..\build\Kni.props" />
+  <PropertyGroup>
+    <AssemblyName>xTile</AssemblyName>
+    <RootNamespace />
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(GameLibsDir)xTile\**\*.cs" Exclude="$(GameLibsDir)xTile\bin\**;$(GameLibsDir)xTile\obj\**" />
+  </ItemGroup>
+</Project>

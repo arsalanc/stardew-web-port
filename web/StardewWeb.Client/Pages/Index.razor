@@ -1,0 +1,15 @@
+@page "/"
+@page "/index.html"
+@inject IJSRuntime JsRuntime
+
+<PageTitle>Stardew Valley (web port)</PageTitle>
+
+@* The game area leaves room on the right for the wiki panel (wwwroot/js/wikiPanel.js sets the width). *@
+<div id="canvasHolder" style="background:#000; position:fixed; top:0; left:0; bottom:0; right:var(--wiki-panel-width, 0px);">
+    <canvas id="theCanvas" style="touch-action:none;"></canvas>
+</div>
+
+@if (_fault != null)
+{
+    <pre id="fault" style="position:fixed; inset:0; margin:0; padding:16px; overflow:auto; background:rgba(20,0,0,.92); color:#fdd; font:12px/1.4 Consolas,monospace; white-space:pre-wrap;">@_fault</pre>
+}

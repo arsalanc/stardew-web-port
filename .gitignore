@@ -1,0 +1,24 @@
+# Everything derived from your copy of Stardew Valley lives here (decompiled source, exported audio,
+# local.props). It must never be committed: it's ConcernedApe's copyrighted material.
+local/
+
+# Build output (contains compiled game code)
+bin/
+obj/
+publish/
+publish-staging/
+publish-old/
+
+# Safety net: never commit game binaries or assets that end up somewhere unexpected
+*.dll
+*.exe
+*.xnb
+*.xwb
+*.xsb
+*.xgs
+Content/
+
+# Editor / OS
+.vs/
+*.user
+*.log

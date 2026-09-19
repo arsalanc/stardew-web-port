@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Offline tool: converts the game's XACT audio (Content/XACT) into browser-friendly files.
+    Uses your install's MonoGame.Framework.dll to parse the sound bank, so cue data matches desktop exactly.
+    Run by setup.ps1, with two arguments: the game's Content folder and the output folder.
+  -->
+  <Import Project="..\..\build\Paths.props" />
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <PlatformTarget>x64</PlatformTarget>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="MonoGame.Framework"><HintPath>$(GameDir)\MonoGame.Framework.dll</HintPath></Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(GameDir)\SDL2.dll;$(GameDir)\soft_oal.dll" CopyToOutputDirectory="PreserveNewest" Visible="false" Condition="Exists('$(GameDir)\SDL2.dll')" />
+  </ItemGroup>
+</Project>

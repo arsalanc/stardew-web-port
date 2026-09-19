@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    The game itself, compiled against KNI for the browser.
+    Sources: local/src/ (your copy of the game, decompiled and patched by setup.ps1) + Platform/ and Port/ (this repo).
+    AssemblyName must stay "Stardew Valley": content and saves reference types by assembly-qualified name.
+  -->
+  <Import Project="..\..\build\Kni.props" />
+  <PropertyGroup>
+    <AssemblyName>Stardew Valley</AssemblyName>
+    <RootNamespace />
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(GameSrcDir)**\*.cs" Exclude="$(GameSrcDir)bin\**;$(GameSrcDir)obj\**" />
+    <!-- Platform SDKs and raw-socket multiplayer have no browser equivalent. -->
+    <Compile Remove="$(GameSrcDir)StardewValley.SDKs.Steam*\**" />
+    <Compile Remove="$(GameSrcDir)StardewValley.SDKs.GogGalaxy*\**" />
+    <Compile Remove="$(GameSrcDir)StardewValley.SDKs.WeGameRail\**" />
+    <Compile Remove="$(GameSrcDir)StardewValley.Network\Lidgren*.cs" />
+    <Compile Remove="$(GameSrcDir)StardewValley.Network\NetBuffer*Stream.cs" />
+    <!-- Desktop XACT wrappers; the web build uses its own audio backend. -->
+    <Compile Remove="$(GameSrcDir)StardewValley\SoundBankWrapper.cs" />
+    <Compile Remove="$(GameSrcDir)StardewValley.Audio\AudioEngineWrapper.cs" />
+    <Compile Remove="$(GameSrcDir)StardewValley\CueWrapper.cs" />
+    <!-- This repo's code: browser platform layer and helpers the patches call into. -->
+    <Compile Include="Platform\**\*.cs;Port\**\*.cs" />
+    <EmbeddedResource Include="$(GameSrcDir)StardewValley.Icon.ico" LogicalName="StardewValley.Icon.ico" Condition="Exists('$(GameSrcDir)StardewValley.Icon.ico')" />
+    <EmbeddedResource Include="$(GameSrcDir)StardewValley.Icon.bmp" LogicalName="StardewValley.Icon.bmp" Condition="Exists('$(GameSrcDir)StardewValley.Icon.bmp')" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Libs\xTile.csproj" />
+    <ProjectReference Include="..\Libs\StardewValley.GameData.csproj" />
+    <ProjectReference Include="..\Libs\BmFont.csproj" />
+  </ItemGroup>
+
+  <!-- Original game DLLs reused as-is (shared with the client so publish includes them). -->
+  <Import Project="..\..\build\GameRefs.props" />
+</Project>

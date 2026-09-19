@@ -1,0 +1,17 @@
+<Project>
+  <!--
+    Managed DLLs from your Stardew Valley install that the web build reuses as-is (found via GameDir,
+    see Paths.props). Imported by both the game library (to compile) and the Blazor client: Blazor's
+    publish step doesn't carry file (HintPath) references through a ProjectReference, so without the
+    direct reference the published build would silently ship without them.
+  -->
+  <ItemGroup>
+    <!-- Pure managed; safe to reuse as-is. -->
+    <Reference Include="System.Data.HashFunction.Interfaces"><HintPath>$(GameDir)\System.Data.HashFunction.Interfaces.dll</HintPath></Reference>
+    <Reference Include="System.Data.HashFunction.Core"><HintPath>$(GameDir)\System.Data.HashFunction.Core.dll</HintPath></Reference>
+    <Reference Include="System.Data.HashFunction.xxHash"><HintPath>$(GameDir)\System.Data.HashFunction.xxHash.dll</HintPath></Reference>
+    <!-- Managed wrappers over native libs: needed so the game's types load; their native paths aren't used on web. -->
+    <Reference Include="SkiaSharp"><HintPath>$(GameDir)\SkiaSharp.dll</HintPath></Reference>
+    <Reference Include="TextCopy"><HintPath>$(GameDir)\TextCopy.dll</HintPath></Reference>
+  </ItemGroup>
+</Project>
