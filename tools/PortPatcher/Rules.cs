@@ -365,6 +365,21 @@ public static class Rules
 					return WrapNotWeb(ctx.Text, x.Stmt, web);
 				})),
 
+		// A web page can't move the system cursor (KNI throws NotImplementedException). The game does
+		// this to snap the cursor when menus open; the caller still updates its own tracked position.
+		new Rule("The system cursor isn't moved on web", Required: true, ctx =>
+			Methods(ctx.Root, "InputState", "SetMousePosition")
+				.SelectMany(m => m.DescendantNodes().OfType<ExpressionStatementSyntax>())
+				.Where(s => s.Expression is InvocationExpressionSyntax
+				{
+					Expression: MemberAccessExpressionSyntax
+					{
+						Name.Identifier.Text: "SetPosition",
+						Expression: IdentifierNameSyntax { Identifier.Text: "Mouse" },
+					},
+				})
+				.Select(s => WrapNotWeb(ctx.Text, s))),
+
 		new Rule("'Exit to Desktop' returns to the title screen", Required: true, ctx =>
 			Methods(ctx.Root, "InstanceGame", "Exit")
 				.Where(m => m.Body?.Statements.Count > 0)
