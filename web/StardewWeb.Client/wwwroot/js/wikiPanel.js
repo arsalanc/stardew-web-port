@@ -180,19 +180,103 @@ async function fillSummary(container, title) {
 
 // ---------- wiki API ----------
 
+const STOPWORDS = new Set(['how', 'the', 'and', 'for', 'you', 'your', 'can', 'what', 'where', 'when', 'why', 'does',
+    'did', 'get', 'got', 'are', 'was', 'were', 'with', 'from', 'that', 'this', 'there', 'here', 'have', 'has', 'into',
+    'out', 'off', 'but', 'not', 'placed', 'place', 'them', 'they', 'its', 'about', 'game', 'stardew', 'valley']);
+
 /**
- * Wiki search for the assistant: finds the best matching page and returns its short intro summary
- * (a couple of paragraphs, never the whole page) with the page's URL.
+ * Wiki search for the assistant: finds the best matching page and returns the passages that match
+ * the question (short excerpts, never the whole page) with the page's URL.
+ *
+ * The wiki's search requires every word to appear, so a natural-language question usually finds
+ * nothing ("pick up chest" -> no results, "chest" -> the Chest page). We retry with fewer keywords.
  */
 export async function searchWiki(query) {
     if (!query) return null;
+    const keywords = [...new Set((query.toLowerCase().match(/[a-z0-9']{3,}/g) ?? []).filter(w => !STOPWORDS.has(w)))];
+
+    // Whole phrases usually find nothing, so fall back to single keywords. Don't guess which keyword
+    // matters (the longest word is often "accidentally"): try them all and prefer a page whose title
+    // is one of them, e.g. "chest" -> the Chest page.
+    let title = await searchTitle(query) ?? await searchTitle(keywords.join(' '));
+    if (!title) {
+        const hits = (await Promise.all(keywords.map(k => searchTitle(k).catch(() => null))))
+            .map((hit, i) => ({ hit, keyword: keywords[i] }))
+            .filter(x => x.hit);
+        title = hits.find(x => x.hit.toLowerCase() === x.keyword)?.hit
+            ?? hits.find(x => x.hit.toLowerCase().includes(x.keyword))?.hit
+            ?? hits[0]?.hit
+            ?? null;
+    }
+    if (!title) return null;
+
+    const page = await wikiPage(title);
+    return { page: page?.title ?? title, url: pageUrl(page?.title ?? title), excerpts: bestPassages(page?.passages ?? [], keywords) };
+}
+
+async function searchTitle(query) {
     const params = new URLSearchParams({ action: 'query', list: 'search', srsearch: query, srlimit: '1', format: 'json', origin: '*' });
     const res = await fetch(`${API}?${params}`);
     if (!res.ok) throw new Error(`wiki search failed (HTTP ${res.status})`);
-    const hit = (await res.json()).query?.search?.[0];
-    if (!hit) return null;
-    const summary = await wikiSummary(hit.title);
-    return { page: hit.title, summary: summary?.paragraphs?.join('\n') ?? '', url: summary?.url ?? pageUrl(hit.title) };
+    return (await res.json()).query?.search?.[0]?.title ?? null;
+}
+
+const pageCache = new Map();
+
+function wikiPage(title) {
+    if (!pageCache.has(title)) {
+        pageCache.set(title, fetchPage(title).catch(err => {
+            console.warn('[port] Wiki page fetch failed:', err);
+            pageCache.delete(title);
+            return null;
+        }));
+    }
+    return pageCache.get(title);
+}
+
+/** The page's paragraphs and list items as plain text, each tagged with the section it's under. */
+async function fetchPage(title) {
+    const params = new URLSearchParams({
+        action: 'parse', page: title, prop: 'text', redirects: '1', format: 'json', origin: '*', disablelimitreport: '1',
+    });
+    const res = await fetch(`${API}?${params}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    if (json.error) return null;
+
+    const doc = new DOMParser().parseFromString(json.parse.text['*'], 'text/html');
+    const root = doc.querySelector('.mw-parser-output') ?? doc.body;
+    const passages = [];
+    let section = '';
+    for (const node of root.querySelectorAll(':scope > h2, :scope > h3, :scope > p, :scope > ul > li, :scope > ol > li')) {
+        const text = node.textContent.replace(/\[\d+\]/g, '').replace(/\s+/g, ' ').trim();
+        if (/^H[23]$/.test(node.tagName)) {
+            section = text.replace(/\[edit\]$/i, '').trim();
+        } else if (text.length > 30) {
+            passages.push({ section, text });
+        }
+    }
+    return { title: json.parse.title ?? title, passages };
+}
+
+// Sections that describe old versions or side notes rather than how the game works now.
+const LOW_VALUE_SECTIONS = /^(history|trivia|bugs|gallery|references|see also|notes)$/i;
+
+/** Up to three passages that mention the question's keywords (falling back to the page's opening). */
+function bestPassages(passages, keywords) {
+    const scored = passages
+        .map(p => {
+            const haystack = (p.section + ' ' + p.text).toLowerCase();
+            const hits = keywords.filter(k => haystack.includes(k)).length;
+            return { ...p, hits: LOW_VALUE_SECTIONS.test(p.section) ? hits / 4 : hits };
+        })
+        .filter(p => p.hits > 0)
+        .sort((a, b) => b.hits - a.hits);
+    const chosen = (scored.length > 0 ? scored : passages).slice(0, 3);
+    return chosen.map(p => {
+        const text = p.text.length > 400 ? p.text.slice(0, 397) + '…' : p.text;
+        return p.section ? `${p.section}: ${text}` : text;
+    });
 }
 
 function wikiSummary(title) {

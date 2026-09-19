@@ -37,8 +37,13 @@ public sealed class OllamaProvider(HttpClient http, int contextTokens) : ILlmPro
 			["model"] = request.Model,
 			["messages"] = request.Messages.DeepClone(),
 			["stream"] = true,
-			// Enough room for the tool schemas plus a few tool results, while keeping an 8B model on an 8 GB GPU.
-			["options"] = new JsonObject { ["num_ctx"] = contextTokens },
+			["options"] = new JsonObject
+			{
+				// Enough room for the tool schemas plus a few tool results, while keeping an 8B model on an 8 GB GPU.
+				["num_ctx"] = contextTokens,
+				// Small models get chatty and skip tool calls at Ollama's default temperature (0.8).
+				["temperature"] = 0.2,
+			},
 		};
 		if (request.Tools is { Count: > 0 })
 		{

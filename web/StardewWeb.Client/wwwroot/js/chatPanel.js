@@ -12,12 +12,19 @@ const STORAGE_MODEL = 'stardew-web.chatModel';
 const STORAGE_THINK = 'stardew-web.chatThink';
 
 const SYSTEM_PROMPT = [
-    'You are the in-game assistant for Stardew Valley, running inside the player\'s own game.',
+    'You are the in-game assistant for Stardew Valley, running inside the player\'s own game on PC.',
     'Answer questions about the game and give practical guidance.',
-    '- For anything about the player\'s own game (date, weather, money, energy, inventory, friendships, recipes they know, bundles) call the tools. Never guess these.',
-    '- For item, recipe, villager and bundle facts prefer the tools: they read this exact game version.',
-    '- Use search_wiki for mechanics, strategy, locations and anything the other tools don\'t cover.',
-    '- If a tool returns an error or nothing useful, say so briefly instead of inventing an answer.',
+    '',
+    'Rules:',
+    '- You do not know Stardew Valley from memory. Everything factual must come from a tool.',
+    '- Player state (date, weather, money, energy, inventory, friendships, recipes they know, bundles): call the tools.',
+    '- Item, recipe, villager and bundle facts: call the tools; they read this exact game version.',
+    '- ANY "how do I ...", "where/when do I ...", or mechanics question: call search_wiki BEFORE answering,',
+    '  even if you think you know. If the first search finds nothing useful, try different keywords.',
+    '- Never invent menus, buttons or controls. The game is played with tools, the mouse and keyboard;',
+    '  there are no on-screen "Place" or "Remove" buttons. Describe an action only if a tool result mentions it.',
+    '- If the tools don\'t answer the question, say plainly that you couldn\'t find it and point to the wiki page',
+    '  the search returned. A short honest answer beats a confident wrong one.',
     '- Keep answers short: a few sentences or a short list. Use item and villager names as the game shows them.',
 ].join('\n');
 
@@ -25,8 +32,8 @@ const WIKI_TOOL = {
     type: 'function',
     function: {
         name: 'search_wiki',
-        description: 'Search the Stardew Valley Wiki and return a short summary of the best matching page. Use for mechanics, strategy, locations, events and anything the game-data tools don\'t cover.',
-        parameters: { type: 'object', properties: { query: { type: 'string', description: 'What to look up, e.g. "Mines elevator" or "Greenhouse"' } }, required: ['query'] },
+        description: 'Search the Stardew Valley Wiki and return excerpts from the best matching page. Use this for how-to and mechanics questions, strategy, locations, events, and anything the game-data tools don\'t cover. Prefer short keyword queries (the wiki matches whole words), e.g. "chest", "crab pot", "greenhouse".',
+        parameters: { type: 'object', properties: { query: { type: 'string', description: 'Keywords to look up, e.g. "chest" or "mine elevator" (not a full sentence)' } }, required: ['query'] },
     },
 };
 
@@ -131,6 +138,10 @@ function currentModel() {
 
 // ---------- conversation ----------
 
+// "How do I ...", "where do I ...", crafting/unlocking questions: things the model has no reliable
+// memory of and tends to answer by inventing menus. We look these up before it can.
+const MECHANICS = /\b(how|where|when|unlock|unlocked|recipe|craft|crafting|build|upgrade|repair|catch|grow|plant|water|mine|smelt|fish|move|remove|place|open|enter|reach|get)\b/i;
+
 async function send(text) {
     const model = currentModel();
     if (!model) { addNote('No model available. Start Ollama and reopen this tab.', 'error'); return; }
@@ -142,6 +153,9 @@ async function send(text) {
     abort = new AbortController();
     setBusy(true);
     try {
+        if (MECHANICS.test(text)) {
+            await groundInWiki(text);
+        }
         const tools = model.tools ? [...gameTools(), WIKI_TOOL] : undefined;
         for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
             const reply = await streamReply(model, tools, abort.signal);
@@ -161,6 +175,27 @@ async function send(text) {
     } finally {
         abort = null;
         setBusy(false);
+    }
+}
+
+/**
+ * Looks the question up on the wiki and gives the model the passages before it answers, so a
+ * mechanics answer is grounded even when the model would rather improvise. Failures are ignored:
+ * the model still has the tools.
+ */
+async function groundInWiki(question) {
+    try {
+        const found = await searchWiki(question);
+        if (!found?.excerpts?.length) return;
+        addNote(`Looked up "${found.page}" on the wiki`, 'tool');
+        history.push({
+            role: 'system',
+            content: `Wiki page "${found.page}" (${found.url}), relevant passages:\n`
+                + found.excerpts.map(e => `- ${e}`).join('\n')
+                + '\nAnswer from these. If they don\'t cover it, say so and give the link.',
+        });
+    } catch (err) {
+        console.warn('[port] Chat: wiki grounding failed:', err);
     }
 }
 
