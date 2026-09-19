@@ -33,7 +33,14 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseBlazorFrameworkFiles();
-app.UseStaticFiles();
+
+// The app's own files (page, scripts, styles): always revalidate, so an updated build or a patched
+// script is picked up on a normal reload. Without this browsers may reuse a stale copy for hours.
+// Game content and audio below keep normal caching; they're large and rarely change.
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx => ctx.Context.Response.Headers.CacheControl = "no-cache, must-revalidate",
+});
 
 // Game content: .xnb/.xwb/.tbin etc. aren't standard web types, so serve everything as binary.
 var contentTypes = new FileExtensionContentTypeProvider();
