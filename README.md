@@ -22,6 +22,7 @@ on your own PC.
 - **Ask panel (F2)**: chat with a local model (via [Ollama](https://ollama.com)) that looks things up
   in your actual save: "How do I make a chest?", "What should I give Shane?", "Which bundles am I
   closest to finishing?". It's free and private: nothing leaves your PC except wiki lookups.
+<img width="1872" height="1023" alt="image" src="https://github.com/user-attachments/assets/9f8a84cf-0124-47b9-8c67-505759ab2907" />
 
 ## Requirements
 
